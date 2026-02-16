@@ -1,6 +1,11 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps, ImageEnhance
-import cairosvg
+try:
+    import cairosvg
+    HAVE_CAIROSVG = True
+except Exception:
+    cairosvg = None
+    HAVE_CAIROSVG = False
 import io
 import numpy as np
 from io import BytesIO
@@ -39,6 +44,14 @@ def load_and_convert_logo_file(file_obj):
             is_svg = True
 
     if is_svg:
+        if not HAVE_CAIROSVG:
+            # Give a helpful error for deployment environments where cairosvg isn't installed
+            raise Exception(
+                "SVG upload detected but cairosvg is not available in the runtime. "
+                "Streamlit Cloud may not have installed the native cairo dependencies. "
+                "Two options: (1) upload PNG versions of your logos, or (2) add cairosvg to requirements and ensure the build logs show it installed successfully. "
+                "See Streamlit Cloud build logs for pip install failures."
+            )
         try:
             png_bytes = cairosvg.svg2png(bytestring=data)
             img = Image.open(io.BytesIO(png_bytes)).convert('RGBA')
